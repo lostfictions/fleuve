@@ -1,0 +1,32 @@
+diff --git a/node_modules/systray2/index.d.ts b/node_modules/systray2/index.d.ts
+index 8b2d4fd..57a3da8 100644
+--- a/node_modules/systray2/index.d.ts
++++ b/node_modules/systray2/index.d.ts
+@@ -3,12 +3,13 @@ import * as child from 'child_process';
+ import * as readline from 'readline';
+ export interface MenuItem {
+     title: string;
+-    tooltip: string;
++    tooltip?: string;
+     checked?: boolean;
+     enabled?: boolean;
+     hidden?: boolean;
+     items?: MenuItem[];
+     icon?: string;
++    click?: () => void;
+ }
+ export interface Menu {
+     icon: string;
+diff --git a/node_modules/systray2/index.js b/node_modules/systray2/index.js
+index ad67c77..5e7e8d4 100644
+--- a/node_modules/systray2/index.js
++++ b/node_modules/systray2/index.js
+@@ -130,7 +130,7 @@ var getTrayBinPath = function (debug, copyDir) {
+         });
+     });
+ };
+-var CHECK_STR = ' (√)';
++var CHECK_STR = '  ✓';
+ function updateCheckedInLinux(item) {
+     if (process.platform !== 'linux') {
+         return;
