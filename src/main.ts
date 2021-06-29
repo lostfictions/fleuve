@@ -1,6 +1,8 @@
 /* eslint-disable no-await-in-loop */
 
 import cp from "child_process";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import { $, nothrow, ProcessOutput } from "zx";
 import Conf from "conf";
 import onDeath from "death";
@@ -24,6 +26,8 @@ let micLoopbackModNum: number | null = null;
 let audibleLoopbackModNum: number | null = null;
 
 const conf = new Conf({
+  projectName: "fleuve",
+  projectVersion: "0.0.1",
   schema: {
     micLoopbackEnabled: { type: "boolean", default: false },
     audibleLoopbackEnabled: { type: "boolean", default: false },
@@ -174,7 +178,7 @@ void (async () => {
 
   const systray = new SysTray({
     menu: {
-      icon: "./icon.png",
+      icon: join(dirname(fileURLToPath(import.meta.url)), "..", "icon.png"),
       title: "",
       tooltip: "",
       items: [
