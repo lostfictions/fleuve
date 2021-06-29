@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 
 import cp from "child_process";
-import { $, nothrow } from "zx";
+import { $, nothrow, ProcessOutput } from "zx";
 import Conf from "conf";
 import onDeath from "death";
 
@@ -29,6 +29,15 @@ const conf = new Conf({
     audibleLoopbackEnabled: { type: "boolean", default: false },
   },
 });
+
+async function unwrap(p: Promise<ProcessOutput>): Promise<number> {
+  const output = await p;
+  const res = parseInt(String(output));
+  if (isNaN(res)) {
+    throw new Error(`Unexpected NaN result unwrapping command!`);
+  }
+  return res;
+}
 
 async function cleanup() {
   if (nullSinkModNum !== null) {
@@ -86,10 +95,8 @@ void (async () => {
   const defaultQuote = $.quote;
   $.quote = (s: string) => s;
 
-  nullSinkModNum = parseInt(
-    String(
-      await $`pactl load-module module-null-sink sink_name=${NULL_SINK_NAME}`
-    )
+  nullSinkModNum = await unwrap(
+    $`pactl load-module module-null-sink sink_name=${NULL_SINK_NAME}`
   );
   await $`pacmd "update-sink-proplist ${NULL_SINK_NAME} device.description=\\"${NULL_SINK_HUMAN_NAME}\\""`;
   await $`pacmd "update-source-proplist ${NULL_SINK_NAME}.monitor device.description=\\"Monitor of ${NULL_SINK_HUMAN_NAME}\\""`;
@@ -98,10 +105,8 @@ void (async () => {
     .pipe($`grep alsa_output.pci`)
     .pipe($`awk '{print $2}'`);
 
-  combinedSinkModNum = parseInt(
-    String(
-      await $`pactl load-module module-combine-sink slaves="${NULL_SINK_NAME},${outputName}" sink_name=${COMBINED_SINK_NAME} > /dev/null`
-    )
+  combinedSinkModNum = await unwrap(
+    $`pactl load-module module-combine-sink slaves="${NULL_SINK_NAME},${outputName}" sink_name=${COMBINED_SINK_NAME}`
   );
   await $`pacmd "update-sink-proplist ${COMBINED_SINK_NAME} device.description=\\"${COMBINED_SINK_HUMAN_NAME}\\""`;
   await $`pacmd "update-source-proplist ${COMBINED_SINK_NAME}.monitor device.description=\\"Monitor of ${COMBINED_SINK_HUMAN_NAME}\\""`;
@@ -110,18 +115,14 @@ void (async () => {
   $.quote = defaultQuote;
 
   if (conf.get("micLoopbackEnabled")) {
-    micLoopbackModNum = parseInt(
-      String(
-        await $`pactl load-module module-loopback latency_msec=1 sink=${NULL_SINK_NAME}`
-      )
+    micLoopbackModNum = await unwrap(
+      $`pactl load-module module-loopback latency_msec=1 sink=${NULL_SINK_NAME}`
     );
   }
 
   if (conf.get("audibleLoopbackEnabled")) {
-    audibleLoopbackModNum = parseInt(
-      String(
-        await $`pactl load-module module-loopback latency_msec=1 sink=${COMBINED_SINK_NAME}`
-      )
+    audibleLoopbackModNum = await unwrap(
+      $`pactl load-module module-loopback latency_msec=1 sink=${COMBINED_SINK_NAME}`
     );
   }
 
@@ -130,10 +131,8 @@ void (async () => {
     checked: micLoopbackModNum !== null,
     click: async () => {
       if (micLoopbackModNum === null) {
-        micLoopbackModNum = parseInt(
-          String(
-            await $`pactl load-module module-loopback latency_msec=1 sink=${NULL_SINK_NAME}`
-          )
+        micLoopbackModNum = await unwrap(
+          $`pactl load-module module-loopback latency_msec=1 sink=${NULL_SINK_NAME}`
         );
         conf.set("micLoopbackEnabled", true);
       } else {
@@ -155,10 +154,8 @@ void (async () => {
     checked: audibleLoopbackModNum !== null,
     click: async () => {
       if (audibleLoopbackModNum === null) {
-        audibleLoopbackModNum = parseInt(
-          String(
-            await $`pactl load-module module-loopback latency_msec=1 sink=${COMBINED_SINK_NAME}`
-          )
+        audibleLoopbackModNum = await unwrap(
+          $`pactl load-module module-loopback latency_msec=1 sink=${COMBINED_SINK_NAME}`
         );
         conf.set("audibleLoopbackEnabled", true);
       } else {
